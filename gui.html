@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RutaAlerta</title>
+<style>
+  :root {
+    --ink: #232F3E; --ink2: #37475A; --orange: #FF9900; --white: #FFFFFF; --bg: #F2F3F3;
+    --blue: #146EB4; --green: #1D8102; --red: #D13212; --muted: #5F6B7A;
+    --shadow: 0 2px 4px rgba(35,47,62,.08), 0 8px 24px rgba(35,47,62,.10);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-size: 20px; line-height: 1.35;
+         font-family: "Segoe UI", "Amazon Ember", Arial, sans-serif; }
+  header { background: var(--ink); color: var(--white); padding: 16px 36px;
+           border-bottom: 6px solid var(--orange); display: flex; align-items: center;
+           justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo .mark { width: 44px; height: 44px; border-radius: 12px; background: var(--orange);
+                color: var(--ink); display: grid; place-items: center; font-size: 26px; font-weight: 900; }
+  header h1 { margin: 0; font-size: 34px; letter-spacing: .5px; }
+  header h1 span { color: var(--orange); }
+  .meta { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; font-size: 18px; }
+  .badge { padding: 4px 16px; border-radius: 999px; font-weight: 800; background: var(--blue); color: var(--white); }
+  .badge.s3 { background: var(--orange); color: var(--ink); }
+  .badge.local { background: #4a5a6e; }
+  .pulso { width: 12px; height: 12px; border-radius: 50%; background: #5fd35f; display: inline-block;
+           margin-right: 8px; animation: pulso 2s infinite; }
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 36px 56px; display: grid; gap: 24px; }
+  .card { background: var(--white); border-radius: 18px; padding: 22px 28px; box-shadow: var(--shadow); }
+  h2 { margin: 0 0 16px; font-size: 24px; display: flex; align-items: center; gap: 10px; }
+  h2::before { content: ""; width: 6px; height: 24px; border-radius: 3px; background: var(--orange); }
+
+  .selector { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  select, input[type=text] { font: inherit; padding: 11px 14px; border-radius: 12px;
+         border: 2px solid #c3cad2; background: var(--white); color: var(--ink); transition: border-color .2s; }
+  select { min-width: 300px; }
+  input[type=text] { flex: 1; min-width: 260px; }
+  input.nombre { flex: 0 1 240px; min-width: 180px; }
+  select:focus, input:focus { outline: none; border-color: var(--blue); }
+  button { font: inherit; font-weight: 800; padding: 11px 22px; border: none; border-radius: 12px;
+           background: var(--orange); color: var(--ink); cursor: pointer;
+           box-shadow: 0 2px 6px rgba(0,0,0,.18); transition: transform .15s, filter .15s, box-shadow .15s; }
+  button:hover { filter: brightness(1.07); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,.2); }
+  button:active { transform: none; }
+  button:disabled { opacity: .6; cursor: wait; }
+  button.sec { background: var(--ink); color: var(--white); }
+  button.ghost { background: transparent; color: var(--red); box-shadow: none; border: 2px solid var(--red); }
+  [hidden] { display: none !important; }
+
+  #error { display: none; background: var(--red); color: var(--white); padding: 14px 20px;
+           border-radius: 12px; font-weight: 700; }
+
+  .estado { color: var(--white); border-radius: 18px; padding: 26px 34px; display: flex;
+            align-items: center; gap: 22px; transition: background .6s; box-shadow: var(--shadow); }
+  .estado .ico { font-size: 56px; line-height: 1; }
+  .estado .txt { font-size: 42px; font-weight: 800; }
+  .estado small { display: block; font-size: 20px; font-weight: 500; opacity: .92; }
+  .estado.ok { background: linear-gradient(120deg, #1D8102, #2ca30f); }
+  .estado.alta { background: linear-gradient(120deg, #D13212, #e8512f); }
+  .estado.media, .estado.baja { background: linear-gradient(120deg, #FF9900, #ffb43d); color: var(--ink); }
+
+  .cols { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr); gap: 24px; align-items: start; }
+  @media (max-width: 980px) { .cols { grid-template-columns: 1fr; } }
+  .stack { display: grid; gap: 24px; }
+
+  /* Línea vertical de tramos */
+  .paso { display: flex; gap: 22px; }
+  .rail { width: 48px; display: flex; flex-direction: column; align-items: center; flex: none; }
+  .nodo { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+          background: var(--white); border: 7px solid var(--green); font-size: 16px; line-height: 1;
+          transition: border-color .5s, background .5s; }
+  .paso.extremo .nodo { width: 42px; height: 42px; border-width: 8px; }
+  .nodo.alta { border-color: var(--red); background: var(--red); color: var(--white); }
+  .nodo.media, .nodo.baja { border-color: var(--orange); background: var(--orange); color: var(--ink); }
+  .seg { width: 10px; flex: 1; min-height: 34px; background: var(--green); border-radius: 5px; margin: 3px 0;
+         transition: background .5s; }
+  .seg.alta { background: var(--red); }
+  .seg.media, .seg.baja { background: var(--orange); }
+  .info { flex: 1; padding-bottom: 22px; min-width: 0; }
+  .info .nombre-t { font-size: 22px; font-weight: 800; min-height: 42px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .info .rol { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  .ok-t { color: var(--green); font-size: 17px; font-weight: 600; }
+  .inc { border-left: 8px solid var(--orange); background: var(--bg); border-radius: 12px;
+         padding: 12px 16px; margin: 6px 0 8px; animation: aparece .4s ease; }
+  .inc.alta { border-color: var(--red); }
+  .inc.baja { border-color: var(--blue); }
+  .inc .t { font-weight: 800; font-size: 20px; }
+  .inc .sev { float: right; font-size: 14px; font-weight: 800; padding: 2px 12px; border-radius: 999px;
+              color: var(--white); background: var(--orange); }
+  .inc.alta .sev { background: var(--red); }
+  .inc.baja .sev { background: var(--blue); }
+  .inc .d { font-size: 18px; color: var(--ink2); }
+  .leyenda { display: flex; gap: 18px; flex-wrap: wrap; font-size: 16px; color: var(--muted); margin-top: 6px; }
+  .leyenda i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 6px; vertical-align: -2px; }
+
+  .botones { display: flex; gap: 14px; flex-wrap: wrap; }
+  .botones button { font-size: 21px; padding: 16px 28px; }
+  .progreso { height: 10px; background: #e3e7ea; border-radius: 5px; overflow: hidden; margin: 18px 0 8px; }
+  .progreso div { height: 100%; width: 0; background: var(--orange); transition: width 1s linear; }
+  .reloj { display: flex; gap: 26px; flex-wrap: wrap; font-size: 19px; color: var(--muted); }
+  .reloj b { color: var(--blue); }
+
+  .tabla { max-height: 340px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 17px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #dde2e6; }
+  th { color: var(--muted); position: sticky; top: 0; background: var(--white); }
+  .chip { padding: 2px 12px; border-radius: 999px; font-weight: 700; font-size: 15px; background: #e3e7ea; }
+  .chip.correo { background: #dbeafe; color: var(--blue); }
+  .chip.sms { background: #fde8c8; color: #8a4b00; }
+  .ok-c { color: var(--green); font-weight: 700; }
+  .err-c { color: var(--red); font-weight: 700; }
+  .vacio { color: var(--muted); }
+  .pie-h { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .pie-h button { font-size: 15px; padding: 6px 14px; }
+
+  #toast { position: fixed; right: 28px; bottom: 28px; background: var(--ink); color: var(--white);
+           padding: 14px 22px; border-radius: 12px; border-left: 6px solid var(--orange); font-weight: 700;
+           box-shadow: var(--shadow); opacity: 0; transform: translateY(12px); transition: all .35s; pointer-events: none; }
+  #toast.on { opacity: 1; transform: none; }
+
+  @keyframes aparece { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pulso { 50% { opacity: .35; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="mark">R</div><h1>Ruta<span>Alerta</span></h1></div>
+  <div class="meta">
+    <span>Datos: <span id="origen" class="badge local">--</span></span>
+    <span><span class="pulso"></span>Actualizado <b id="hora">--:--:--</b></span>
+  </div>
+</header>
+
+<main>
+  <div id="error"></div>
+
+  <section class="card">
+    <h2>Tu ruta</h2>
+    <div class="selector">
+      <select id="ruta" aria-label="Ruta"></select>
+      <input type="text" id="tramos" placeholder="Tramos separados por comas: Metro Eugenia, Linea 3, Metro Chabacano">
+      <input type="text" id="nombre" class="nombre" placeholder="Nombre (opcional)">
+      <button id="aplicar">Aplicar</button>
+      <button id="guardar" class="sec">Guardar ruta</button>
+      <button id="borrar" class="ghost">Borrar</button>
+    </div>
+  </section>
+
+  <div id="estado" class="estado ok">
+    <div class="ico" id="estado-icono">⏳</div>
+    <div><span class="txt" id="estado-texto">Cargando...</span><small id="estado-sub"></small></div>
+  </div>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Recorrido</h2>
+      <div id="linea"></div>
+      <div class="leyenda">
+        <span><i style="background:#1D8102"></i>Despejado</span>
+        <span><i style="background:#FF9900"></i>Severidad media/baja</span>
+        <span><i style="background:#D13212"></i>Severidad alta</span>
+      </div>
+    </section>
+
+    <div class="stack">
+      <section class="card">
+        <h2>Avisos y actualización</h2>
+        <div class="botones">
+          <button id="b1dia">Aviso 1 día antes</button>
+          <button id="b10min">Aviso 10 min antes</button>
+          <button id="actualizar" class="sec">Actualizar ahora</button>
+        </div>
+        <div class="progreso"><div id="barra"></div></div>
+        <div class="reloj">
+          <span>Próxima actualización en <b id="cuenta">--</b> s</span>
+          <span>Cada <b id="intervalo">--</b> s</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Historial de notificaciones</h2>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Hora</th><th>Canal</th><th>Asunto</th><th>Estado</th></tr></thead>
+            <tbody id="historial"></tbody>
+          </table>
+        </div>
+        <div class="pie-h"><span class="vacio" id="hist-n"></span><button id="limpiar" class="sec">Limpiar historial</button></div>
+      </section>
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ICONOS = {transporte_retrasado:'🚇', estacion_cerrada:'⛔', calle_bloqueada:'🚧',
+                manifestacion:'📢', evento:'🎫'};
+const CANALES = {consola:'Consola', correo:'Correo', sms:'SMS'};
+const KEY = 'rutaalerta.v1';
+
+/* ---------- persistencia en localStorage ---------- */
+let S = {ruta: null, tramos: '', nombre: '', guardadas: [], historial: [], ultimo: null};
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+function guardar() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+let intervalo = 180, restante = 180, ocupado = false, rutasServer = [];
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function mostrarError(msg) {
+  const e = $('error'); e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none';
+}
+
+/* ---------- selección de ruta ---------- */
+function poblarSelect() {
+  let h = '<optgroup label="Rutas disponibles">' +
+    rutasServer.map(x => '<option value="' + esc(x.id) + '">' + esc(x.nombre) + '</option>').join('') + '</optgroup>';
+  if (S.guardadas.length)
+    h += '<optgroup label="Mis rutas guardadas">' + S.guardadas.map((g, i) =>
+      '<option value="saved:' + i + '">' + esc(g.nombre) + '</option>').join('') + '</optgroup>';
+  h += '<option value="__custom__">Otra ruta (escribirla)...</option>';
+  $('ruta').innerHTML = h;
+}
+function parametros() {
+  const v = $('ruta').value;
+  if (v === '__custom__') return {tramos: $('tramos').value, nombre: $('nombre').value};
+  if (v.startsWith('saved:')) { const g = S.guardadas[+v.slice(6)] || {}; return {tramos: g.tramos || '', nombre: g.nombre || ''}; }
+  return {ruta: v};
+}
+function modoUI() {
+  const v = $('ruta').value, custom = v === '__custom__';
+  $('tramos').hidden = $('nombre').hidden = $('guardar').hidden = !custom;
+  $('borrar').hidden = !v.startsWith('saved:');
+  $('aplicar').hidden = !custom;
+}
+function recordarSeleccion() {
+  S.ruta = $('ruta').value; S.tramos = $('tramos').value; S.nombre = $('nombre').value; guardar();
+}
+
+/* ---------- render ---------- */
+function renderTramos(d) {
+  const n = d.tramos.length;
+  $('linea').innerHTML = d.tramos.map((t, i) => {
+    const extremo = i === 0 || i === n - 1;
+    const rol = i === 0 ? 'Origen' : (i === n - 1 ? 'Destino' : '');
+    const icono = t.estado === 'ok' ? '' : (t.estado === 'alta' ? '!' : '▲');
+    const incs = t.incidentes.map(c =>
+      '<div class="inc ' + esc(c.severidad) + '"><span class="sev">' + esc(String(c.severidad).toUpperCase()) + '</span>' +
+      '<div class="t">' + (ICONOS[c.tipo] || '❗') + ' ' + esc(c.etiqueta) + '</div>' +
+      '<div class="d">' + esc(c.descripcion || '') + '</div></div>').join('');
+    return '<div class="paso' + (extremo ? ' extremo' : '') + '"><div class="rail">' +
+      '<div class="nodo ' + esc(t.estado) + '">' + icono + '</div>' +
+      (i < n - 1 ? '<div class="seg ' + esc(t.estado) + '"></div>' : '') + '</div>' +
+      '<div class="info"><div class="nombre-t">' + esc(t.nombre) +
+      (rol ? ' <span class="rol">' + rol + '</span>' : '') +
+      (t.estado === 'ok' ? ' <span class="ok-t">Sin incidencias</span>' : '') + '</div>' + incs + '</div></div>';
+  }).join('');
+}
+
+function renderHistorial() {
+  const h = S.historial;
+  $('historial').innerHTML = h.length ? h.slice(0, 60).map(x =>
+    '<tr><td>' + esc(x.hora) + '</td><td><span class="chip ' + esc(x.canal) + '">' + esc(CANALES[x.canal] || x.canal) +
+    '</span></td><td>' + esc(x.asunto) + '</td><td class="' +
+    (x.ok ? 'ok-c">Enviado' : 'err-c">No enviado' + (x.detalle ? ' (' + esc(x.detalle) + ')' : '')) + '</td></tr>').join('')
+    : '<tr><td colspan="4" class="vacio">Aún no hay notificaciones.</td></tr>';
+  $('hist-n').textContent = h.length + ' registro(s) guardados en este navegador';
+}
+function fusionarHistorial(servidor) {
+  const vistos = new Set(S.historial.map(x => x.ts + x.canal + x.asunto));
+  servidor.forEach(x => { if (!vistos.has(x.ts + x.canal + x.asunto)) S.historial.push(x); });
+  S.historial.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+  S.historial = S.historial.slice(0, 200);
+}
+
+function render(d, desdeCache) {
+  mostrarError('');
+  const clase = d.estado === 'despejada' ? 'ok' : d.severidad_max;
+  $('estado').className = 'estado ' + clase;
+  if (d.estado === 'despejada') {
+    $('estado-icono').textContent = '✅'; $('estado-texto').textContent = 'Ruta despejada';
+  } else {
+    $('estado-icono').textContent = d.severidad_max === 'alta' ? '🚨' : '⚠️';
+    $('estado-texto').textContent = d.total + (d.total === 1 ? ' incidencia' : ' incidencias') + ' en tu ruta';
+  }
+  $('estado-sub').textContent = d.ruta.nombre +
+    (d.ruta.hora_salida_habitual ? ' · salida habitual ' + d.ruta.hora_salida_habitual : '') +
+    (desdeCache ? ' · última lectura guardada' : '');
+  renderTramos(d);
+  const o = $('origen'); o.textContent = d.origen; o.className = 'badge ' + (d.origen === 'S3' ? 's3' : 'local');
+  $('hora').textContent = d.hora;
+  intervalo = d.intervalo; $('intervalo').textContent = intervalo;
+  if (!desdeCache) { fusionarHistorial(d.historial); S.ultimo = d; guardar(); }
+  renderHistorial();
+}
+
+/* ---------- llamadas ---------- */
+async function llamar(url, opciones, botonId) {
+  if (ocupado) return;
+  ocupado = true;
+  const b = botonId && $(botonId); if (b) b.disabled = true;
+  try {
+    const r = await fetch(url, opciones);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error ' + r.status);
+    render(d, false);
+    return true;
+  } catch (e) {
+    mostrarError(e.message);
+  } finally {
+    ocupado = false; if (b) b.disabled = false;
+    restante = intervalo; actualizarReloj();
+  }
+}
+function actualizar() {
+  recordarSeleccion();
+  return llamar('/api/estado?' + new URLSearchParams(parametros()).toString(), undefined, 'actualizar');
+}
+async function aviso(tipo, id) {
+  recordarSeleccion();
+  const ok = await llamar('/api/aviso', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(Object.assign({tipo: tipo}, parametros()))}, id);
+  if (ok) toast('Aviso enviado');
+}
+function actualizarReloj() {
+  $('cuenta').textContent = Math.max(restante, 0);
+  $('barra').style.width = (100 * (intervalo - restante) / intervalo) + '%';
+}
+
+/* ---------- eventos ---------- */
+$('ruta').addEventListener('change', () => { modoUI(); recordarSeleccion(); if ($('ruta').value !== '__custom__') actualizar(); });
+$('aplicar').addEventListener('click', actualizar);
+$('tramos').addEventListener('keydown', e => { if (e.key === 'Enter') actualizar(); });
+$('actualizar').addEventListener('click', actualizar);
+$('b1dia').addEventListener('click', () => aviso('1dia', 'b1dia'));
+$('b10min').addEventListener('click', () => aviso('10min', 'b10min'));
+$('guardar').addEventListener('click', () => {
+  const tramos = $('tramos').value.trim();
+  if (!tramos) { mostrarError('Escribe al menos un tramo antes de guardar.'); return; }
+  const nombre = $('nombre').value.trim() || ('Mi ruta ' + (S.guardadas.length + 1));
+  S.guardadas.push({nombre: nombre, tramos: tramos});
+  S.ruta = 'saved:' + (S.guardadas.length - 1); guardar();
+  poblarSelect(); $('ruta').value = S.ruta; modoUI(); toast('Ruta guardada'); actualizar();
+});
+$('borrar').addEventListener('click', () => {
+  const v = $('ruta').value; if (!v.startsWith('saved:')) return;
+  S.guardadas.splice(+v.slice(6), 1); S.ruta = rutasServer[0] ? rutasServer[0].id : null; guardar();
+  poblarSelect(); $('ruta').value = S.ruta; modoUI(); toast('Ruta borrada'); actualizar();
+});
+$('limpiar').addEventListener('click', () => { S.historial = []; guardar(); renderHistorial(); });
+setInterval(() => {
+  restante -= 1;
+  if (restante <= 0) { actualizar(); restante = intervalo; }
+  actualizarReloj();
+}, 1000);
+
+/* ---------- inicio ---------- */
+async function iniciar() {
+  if (S.ultimo) render(S.ultimo, true);   // pinta al instante lo último guardado
+  else renderHistorial();
+  try {
+    const r = await (await fetch('/api/rutas')).json();
+    rutasServer = r.rutas; intervalo = r.intervalo; restante = intervalo;
+    poblarSelect();
+    $('tramos').value = r.tramos_defecto || S.tramos || ''; $('nombre').value = S.nombre || '';
+    let sel = S.ruta;
+    if (r.tramos_defecto) sel = '__custom__';
+    const existe = [...$('ruta').options].some(o => o.value === sel);
+    $('ruta').value = existe ? sel : (rutasServer.some(x => x.id === r.ruta_defecto) ? r.ruta_defecto : rutasServer[0].id);
+    modoUI();
+    await actualizar();
+  } catch (e) { mostrarError(e.message); }
+}
+iniciar();
+</script>
+</body>
+</html>

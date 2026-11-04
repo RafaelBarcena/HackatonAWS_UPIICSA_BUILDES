@@ -1,0 +1,28 @@
+{
+  "rutas": [
+    {
+      "id": "casa-trabajo",
+      "nombre": "Casa -> Trabajo (habitual)",
+      "origen": "Casa",
+      "destino": "Trabajo",
+      "hora_salida_habitual": "07:30",
+      "tramos": ["Metro Eugenia", "Linea 3", "Linea 9", "Metro Chabacano"]
+    },
+    {
+      "id": "casa-escuela",
+      "nombre": "Casa -> Escuela (UPIICSA)",
+      "origen": "Casa",
+      "destino": "UPIICSA",
+      "hora_salida_habitual": "06:45",
+      "tramos": ["Metro Eugenia", "Linea 3", "Metro Hidalgo", "Linea 2", "Metro Politecnico"]
+    },
+    {
+      "id": "casa-centro",
+      "nombre": "Casa -> Centro (paseo)",
+      "origen": "Casa",
+      "destino": "Centro",
+      "hora_salida_habitual": "10:00",
+      "tramos": ["Metro Eugenia", "Linea 3", "Metro Juarez", "Metro Bellas Artes"]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "incidentes": [
+    {
+      "id": "INC-001",
+      "tipo": "transporte_retrasado",
+      "tramo": "Linea 9",
+      "severidad": "media",
+      "descripcion": "Retrasos de 15 minutos por falla en un tren.",
+      "vigente": true
+    },
+    {
+      "id": "INC-002",
+      "tipo": "estacion_cerrada",
+      "tramo": "Metro Chabacano",
+      "severidad": "alta",
+      "descripcion": "Estación cerrada por mantenimiento.",
+      "vigente": true
+    },
+    {
+      "id": "INC-003",
+      "tipo": "manifestacion",
+      "tramo": "Av. Insurgentes",
+      "severidad": "media",
+      "descripcion": "Marcha con cierre parcial de carriles.",
+      "vigente": true
+    },
+    {
+      "id": "INC-004",
+      "tipo": "evento",
+      "tramo": "Zocalo",
+      "severidad": "baja",
+      "descripcion": "Concierto con alta afluencia de personas.",
+      "vigente": true
+    },
+    {
+      "id": "INC-005",
+      "tipo": "calle_bloqueada",
+      "tramo": "Calzada de Tlalpan",
+      "severidad": "alta",
+      "descripcion": "Bloqueo vial ya liberado.",
+      "vigente": false
+    }
+  ]
+}
